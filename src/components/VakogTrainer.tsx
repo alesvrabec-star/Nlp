@@ -13,6 +13,7 @@ import {
   Sparkles,
   Search
 } from 'lucide-react';
+import { localAnalyzeNLP } from '../utils/nlpLocalEngine';
 
 export const VakogTrainer: React.FC = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -60,10 +61,18 @@ export const VakogTrainer: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: customText.trim() }),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
-      setAnalyzedResult(data.result);
+      if (data.result) {
+        setAnalyzedResult(data.result);
+      } else {
+        throw new Error('No result returned');
+      }
     } catch (e) {
-      console.error(e);
+      console.warn('Using local NLP analysis fallback:', e);
+      setAnalyzedResult(localAnalyzeNLP(customText.trim()));
     } finally {
       setIsAnalyzing(false);
     }

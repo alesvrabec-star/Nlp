@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Send
 } from 'lucide-react';
+import { localReframeNLP } from '../utils/nlpLocalEngine';
 
 export const ReframingEngine: React.FC = () => {
   const [belief, setBelief] = useState('Bojím se, že když udělám chybu, ztratím respekt svého týmu.');
@@ -52,12 +53,18 @@ export const ReframingEngine: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ belief: target.trim() }),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
       if (data.reframes && data.reframes.length > 0) {
         setReframes(data.reframes);
+      } else {
+        throw new Error('No reframes returned');
       }
     } catch (e) {
-      console.error(e);
+      console.warn('Using local NLP reframing fallback:', e);
+      setReframes(localReframeNLP(target.trim()));
     } finally {
       setIsLoading(false);
     }

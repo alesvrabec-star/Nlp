@@ -36,14 +36,14 @@ function localAnalyzeNLP(text: string) {
   const kinestheticKeywords = ['cítit', 'pocit', 'těžk', 'lehk', 'tlak', 'dotek', 'uchop', 'hork', 'chlad', 'stisk', 'napětí', 'uvoln'];
   const auditoryDigitalKeywords = ['myslet', 'chápat', 'analyz', 'logik', 'smysl', 'princip', 'uvědom', 'struktur', 'proces', 'rozumět'];
 
-  const foundVisual = visualKeywords.filter(k => lower.includes(k));
-  const foundAuditory = auditoryKeywords.filter(k => lower.includes(k));
-  const foundKinesthetic = kinestheticKeywords.filter(k => lower.includes(k));
-  const foundAd = auditoryDigitalKeywords.filter(k => lower.includes(k));
+  const foundVisual = visualKeywords.filter((k) => lower.includes(k));
+  const foundAuditory = auditoryKeywords.filter((k) => lower.includes(k));
+  const foundKinesthetic = kinestheticKeywords.filter((k) => lower.includes(k));
+  const foundAd = auditoryDigitalKeywords.filter((k) => lower.includes(k));
 
   const total = foundVisual.length + foundAuditory.length + foundKinesthetic.length + foundAd.length || 1;
 
-  let dominant = 'Kinestetický';
+  let dominant = 'Kinestetický (K)';
   const counts = [
     { type: 'Vizuální (V)', count: foundVisual.length },
     { type: 'Auditivní (A)', count: foundAuditory.length },
@@ -61,21 +61,21 @@ function localAnalyzeNLP(text: string) {
     metaViolations.push({
       pattern: 'Univerzální kvantifikátor (Generalizace)',
       detail: 'Slova jako "nikdo", "vždycky" zveličují situaci do absolutna.',
-      question: 'Opravdu nikdy? Existovala někdy výjimka, kdy tomu tak nebylo?'
+      question: 'Opravdu nikdy? Existovala někdy výjimka, kdy tomu tak nebylo?',
     });
   }
   if (/\b(musím|musí|nesmím|nemohu|nejde to)\b/i.test(lower)) {
     metaViolations.push({
       pattern: 'Modální operátor nutnosti / nemožnosti',
       detail: 'Vyjadřuje pocit nesvobody nebo vnímané vnější překážky.',
-      question: 'Co přesně by se stalo, kdybyste to neudělali? Co vám v tom brání?'
+      question: 'Co přesně by se stalo, kdybyste to neudělali? Co vám v tom brání?',
     });
   }
   if (/\b(on si myslí|vím co chce|ignoruje mě|nemá mě rád)\b/i.test(lower)) {
     metaViolations.push({
       pattern: 'Čtení myšlenek (Zkreslení)',
       detail: 'Předpokládáme vnitřní stav druhé osoby bez ověření smyslových faktů.',
-      question: 'Jak konkrétně víte, co si myslí? Co přesně řekl nebo udělal?'
+      question: 'Jak konkrétně víte, co si myslí? Co přesně řekl nebo udělal?',
     });
   }
 
@@ -88,13 +88,12 @@ function localAnalyzeNLP(text: string) {
       digitalPercent: Math.round((foundAd.length / total) * 100),
     },
     metaViolations,
-    nlpScore: Math.min(95, 60 + (foundVisual.length + foundKinesthetic.length) * 8 - metaViolations.length * 10),
+    nlpScore: Math.min(95, 65 + (foundVisual.length + foundKinesthetic.length) * 8 - metaViolations.length * 10),
     reframingAdvice: 'Zaměřte se na přizpůsobení smyslového slovníku a ověření předpokladů pomocí precizních otázek Meta-modelu.',
   };
 }
 
-// 1. NLP Analysis Endpoint
-app.post('/api/nlp/analyze', async (req, res) => {
+const analyzeHandler = async (req: express.Request, res: express.Response) => {
   try {
     const { text, context } = req.body;
     if (!text || typeof text !== 'string') {
@@ -143,14 +142,12 @@ Vrať výsledek jako validní JSON ve formátu:
     const parsed = JSON.parse(response.text || '{}');
     return res.json({ result: parsed, source: 'gemini' });
   } catch (err: any) {
-    console.warn('Gemini NLP analyze error, using fallback:', err?.message || err);
-    const fallback = localAnalyzeNLP(req.body.text || '');
+    const fallback = localAnalyzeNLP(req.body?.text || '');
     return res.json({ result: fallback, source: 'fallback' });
   }
-});
+};
 
-// 2. Reframing Engine Endpoint
-app.post('/api/nlp/reframe', async (req, res) => {
+const reframeHandler = async (req: express.Request, res: express.Response) => {
   try {
     const { belief } = req.body;
     if (!belief || typeof belief !== 'string') {
@@ -164,25 +161,25 @@ app.post('/api/nlp/reframe', async (req, res) => {
           {
             type: 'Kontextové přeformátování',
             explanation: 'V jakém jiném kontextu je toto chování nebo vlastnost cennou výhodou?',
-            reframe: `Když toto přesvědčení vnímáte v náročném projektu, nutí vás to k opatrnosti a precizní přípravě.`
+            reframe: 'Když toto přesvědčení vnímáte v náročném projektu, nutí vás to k opatrnosti a precizní přípravě.',
           },
           {
             type: 'Významové přeformátování',
             explanation: 'Co jiného tato situace znamená z vyšší perspektivy růstu?',
-            reframe: `Není to selhání ani limit, ale přesná zpětná vazba ukazující, které dovednosti stojí za to posílit.`
+            reframe: 'Není to selhání ani limit, ale přesná zpětná vazba ukazující, které dovednosti stojí za to posílit.',
           },
           {
             type: 'Pozitivní záměr (Positive Intention)',
             explanation: 'Co se toto vnitřní nastavení snaží chránit nebo zajistit?',
-            reframe: `Podvědomí se vás snaží chránit před zbytečným rizikem a zajišťuje bezpečí vašich hodnot.`
+            reframe: 'Podvědomí se vás snaží chránit před zbytečným rizikem a zajišťuje bezpečí vašich hodnot.',
           },
           {
             type: 'Časový nadhled & Zdroje',
             explanation: 'Jak se na tuto situaci budete dívat za 3 roky?',
-            reframe: `S odstupem času to uvidíte jako klíčový bod obratu, kde jste získali novou vnitřní odolnost.`
-          }
+            reframe: 'S odstupem času to uvidíte jako klíčový bod obratu, kde jste získali novou vnitřní odolnost.',
+          },
         ],
-        source: 'templates'
+        source: 'templates',
       });
     }
 
@@ -227,30 +224,23 @@ Vytvoř odpověď jako JSON:
     const parsed = JSON.parse(response.text || '{}');
     return res.json({ ...parsed, source: 'gemini' });
   } catch (err: any) {
-    console.warn('Gemini reframe error:', err?.message || err);
     return res.json({
-      belief: req.body.belief,
+      belief: req.body?.belief,
       reframes: [
         {
           type: 'Kontextové přeformátování',
           explanation: 'Hledání prostředí, kde je tato reakce užitečná.',
-          reframe: `V situacích vyžadujících maximální obezřetnost vám tento přístup šetří energii.`
+          reframe: 'V situacích vyžadujících maximální obezřetnost vám tento přístup šetří energii.',
         },
-        {
-          type: 'Významové přeformátování',
-          explanation: 'Změna významu pro aktivaci zdrojů.',
-          reframe: `Tato situace není překážka, ale tréninkový trenažér vaší mentální flexibility.`
-        }
       ],
-      source: 'fallback'
+      source: 'fallback',
     });
   }
-});
+};
 
-// 3. Scenario Partner & Roleplay Turn
-app.post('/api/nlp/scenario-turn', async (req, res) => {
+const scenarioHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { scenarioId, scenarioTitle, partnerRole, history, userReply } = req.body;
+    const { scenarioTitle, partnerRole, history, userReply } = req.body;
 
     if (!userReply) {
       return res.status(400).json({ error: 'Odpověď uživatele je povinná.' });
@@ -263,9 +253,9 @@ app.post('/api/nlp/scenario-turn', async (req, res) => {
           rapportScore: 82,
           pacingObserved: 'Uznání pohledu partnera před návrhem vlastního řešení.',
           dominantSystemDetected: 'Kinestetický',
-          tips: 'Zkuste zrcadlit klíčové slovo partnera a zakončit otevřenou ověřovací otázkou.'
+          tips: 'Zkuste zrcadlit klíčové slovo partnera a zakončit otevřenou ověřovací otázkou.',
         },
-        source: 'fallback'
+        source: 'fallback',
       });
     }
 
@@ -282,10 +272,6 @@ ${conversationContext || 'Zatím žádná historie.'}
 
 Nová replika od uživatele:
 "${userReply}"
-
-Tvým úkolem je:
-1. Zareagovat autenticky v postavě (reaguj realisticky na to, jak moc uživatel navázal vztah (Rapport), zda použil pacing & leading, zda respektoval tvůj model světa).
-2. Jako NLP trenér objektivně vyhodnotit uživatelovu repliku podle NLP principů.
 
 Vrať JSON:
 {
@@ -310,22 +296,37 @@ Vrať JSON:
     const parsed = JSON.parse(response.text || '{}');
     return res.json({ ...parsed, source: 'gemini' });
   } catch (err: any) {
-    console.warn('Gemini scenario turn error:', err?.message || err);
     return res.json({
       partnerResponse: 'Chápu tvůj argument. Když se na to podívám z tvého úhlu, dává to určitý smysl.',
       nlpFeedback: {
         rapportScore: 78,
         pacingObserved: 'Slušné přizpůsobení tónu.',
         dominantSystemDetected: 'Kinestetický',
-        tips: 'Využijte smyslově specifický jazyk partnera.'
+        tips: 'Využijte smyslově specifický jazyk partnera.',
       },
-      source: 'fallback'
+      source: 'fallback',
     });
   }
-});
+};
 
-// Configure Vite or Static files
+// Mount route handlers on both /api/... and /...
+app.post('/api/nlp/analyze', analyzeHandler);
+app.post('/nlp/analyze', analyzeHandler);
+
+app.post('/api/nlp/reframe', reframeHandler);
+app.post('/nlp/reframe', reframeHandler);
+
+app.post('/api/nlp/scenario-turn', scenarioHandler);
+app.post('/nlp/scenario-turn', scenarioHandler);
+
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'nlp-master-api' }));
+
+// Start standalone dev server only when not executing under Vercel serverless
 async function startServer() {
+  if (process.env.VERCEL) {
+    return;
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -347,3 +348,5 @@ async function startServer() {
 }
 
 startServer();
+
+export default app;

@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Plus
 } from 'lucide-react';
+import { localScenarioTurnNLP } from '../utils/nlpLocalEngine';
 
 export const ScenariosView: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<Scenario>(PRESET_SCENARIOS[0]);
@@ -117,6 +118,10 @@ export const ScenariosView: React.FC = () => {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.partnerResponse) {
@@ -128,21 +133,18 @@ export const ScenariosView: React.FC = () => {
             nlpFeedback: data.nlpFeedback,
           },
         ]);
+      } else {
+        throw new Error('Invalid format');
       }
     } catch (err) {
-      console.error('Error during scenario turn:', err);
-      // Fallback
+      console.warn('Using local NLP scenario fallback:', err);
+      const fallback = localScenarioTurnNLP(currentInput, selectedScenario.partnerRole);
       setConversation([
         ...updatedHistory,
         {
           speaker: 'partner',
-          text: 'Rozumím tvému postoji. Zní to rozumně, ale stále vnímám několik sporných bodů.',
-          nlpFeedback: {
-            rapportScore: 80,
-            pacingObserved: 'Uznání pohledu před argumentací.',
-            dominantSystemDetected: 'Kinestetický',
-            tips: 'Zkuste zrcadlit klíčové slovo partnera a zakončit otevřenou ověřovací otázkou.',
-          },
+          text: fallback.partnerResponse,
+          nlpFeedback: fallback.nlpFeedback,
         },
       ]);
     } finally {
