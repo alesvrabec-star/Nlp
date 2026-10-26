@@ -3,6 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Ignore Vite HMR WebSocket connection errors in iframe sandbox environment
+      window.addEventListener('unhandledrejection', function(e) {
+        if (
+          e.reason &&
+          (e.reason.message?.includes('WebSocket') ||
+           e.reason.message?.includes('closed without opened') ||
+           e.reason.stack?.includes('@vite/client') ||
+           String(e.reason).includes('WebSocket'))
+        ) {
+          e.preventDefault();
+        }
+      });
+      window.addEventListener('error', function(e) {
+        if (
+          e.message?.includes('WebSocket') ||
+          e.filename?.includes('@vite/client')
+        ) {
+          e.preventDefault();
+        }
+      });
+    </script>
     <title>NLP Master - Trénink a Rozvoj</title>
     <meta name="description" content="Interaktivní trenažér neurolingvistického programování s reálnými scénáři, laboratoří submodalit, VAKOG cvičeními a denním plánem osobního růstu." />
     <meta property="og:title" content="NLP Master - Trénink a Rozvoj" />
