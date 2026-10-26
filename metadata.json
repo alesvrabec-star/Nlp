@@ -1,0 +1,6 @@
+{
+  "name": "NLP Master - Trénink a Rozvoj",
+  "description": "Interaktivní trenažér neurolingvistického programování s reálnými scénáři, laboratoří submodalit, VAKOG cvičeními a denním plánem osobního růstu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
